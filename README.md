@@ -1,4 +1,4 @@
-# Smart Home Pi Full Deployer
+# Smart Home Full Deployer on {Pi + NVMe}
 
 **Automated full-stack Smart Home installer for Raspberry Pi (NVMe boot)**
 
