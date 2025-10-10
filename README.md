@@ -1,7 +1,7 @@
-# smart-home-pi-fulldeployer
+# Smart Home Pi Full Deployer
 Full Smart Home installer for {Raspberry Pi 5 + NVMe} station (includes Docker, Docker-Compose, Firewall, Home Assistant, Nextcloud, Squid, MQTT, ESPHome)
 
-# smart-home-pi-fulldeployer
+# Smart Home Pi Full Deployer
 
 **Automated full-stack Smart Home installer for Raspberry Pi (NVMe boot)**
 
