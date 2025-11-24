@@ -1,4 +1,4 @@
-NVME_DEVICE=$(sudo lsblk -d -o NAME,TYPE | grep nvme | awk '{print $1}' | head -1)
+NVME_DEVICE=$(detect_nvme_device)
 NVME_PATH="/dev/${NVME_DEVICE}"
 
 parted -s "${NVME_PATH}" -- \
