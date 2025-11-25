@@ -25,15 +25,11 @@ sudo fdisk -l /dev/nvme0n1 | grep "Disk /dev/nvme0n1"
 
 
 
-
-
-GPTテーブルを作成する：
-
+# Create GPT table
 sudo parted /dev/nvme0n1
-
 mklabel gpt
 
-# パーティションを作成
+# Create partitions
 mkpart primary fat32 1MiB 1025MiB     # 1. /boot/firmware
 mkpart primary ext4 1025MiB 101GiB    # 2. /
 mkpart primary ext4 101GiB 241GiB     # 3. /var
@@ -43,34 +39,17 @@ mkpart primary xfs 651GiB 711GiB      # 6. /mnt/scratch
 mkpart primary btrfs 711GiB 100%      # 7. /mnt/data
 
 
-# パーティションブート用にマークする
+# Mark first partition as boot
 set 1 boot on
 set 1 esp on
 
-# 作成されたパーティションを確認する
+# Plot to check
 print
 
-image.png
-
-# parted を終了する
+# Quit parted
 quit
 
-アラインメントの問題を避けるため、先頭に1MiBを空けておきます。
-
-lsblk /dev/nvme0n1を実行すると, これを取得します：
-
-NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
-nvme0n1     259:0    0 953.9G  0 disk
-├─nvme0n1p1 259:8    0     1G  0 part
-├─nvme0n1p2 259:9    0   100G  0 part
-├─nvme0n1p3 259:10   0   140G  0 part
-├─nvme0n1p4 259:11   0   180G  0 part
-├─nvme0n1p5 259:12   0   230G  0 part
-├─nvme0n1p6 259:13   0    60G  0 part
-└─nvme0n1p7 259:14   0 242.9G  0 part
-
-パーティションをフォーマットする
-
+# Format partitions
 sudo mkfs.vfat -F32 -n system-boot /dev/nvme0n1p1
 sudo mkfs.ext4 -L writable /dev/nvme0n1p2
 sudo mkfs.ext4 /dev/nvme0n1p3
@@ -79,27 +58,20 @@ sudo mkfs.ext4 -L ML-DATA /dev/nvme0n1p5
 sudo mkfs.xfs -f /dev/nvme0n1p6
 sudo mkfs.btrfs -f -L DATA /dev/nvme0n1p7
 
-今後識別が必要になる重要なパーティションにはラベルを付けます。
-そのため、ブート用・OS用・ML-DATA用・DATA用 のパーティションのみにラベルを設定します。
-ファイルシステム
+# Check partitions
+lsblk -f /dev/nvme0n1
 
-lsblk -f /dev/nvme0n1を実行すると, UUIDを見える：
+# Should plot
+# NAME        FSTYPE   LABEL          UUID
+# nvme0n1p1   vfat     system-boot    xxxx-xxxx
+# nvme0n1p2   ext4     writable       xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# nvme0n1p3   ext4                    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# nvme0n1p4   ext4     CONTAINERS     xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# nvme0n1p5   ext4     ML-DATA        xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# nvme0n1p6   xfs                     xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# nvme0n1p7   btrfs    DATA           xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
-NAME        FSTYPE   LABEL          UUID
-nvme0n1p1   vfat     system-boot    xxxx-xxxx
-nvme0n1p2   ext4     writable       xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-nvme0n1p3   ext4                    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-nvme0n1p4   ext4     CONTAINERS     xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-nvme0n1p5   ext4     ML-DATA        xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-nvme0n1p6   xfs                     xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-nvme0n1p7   btrfs    DATA           xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-
-DATA パーティションが btrfs でフォーマットされていることが表示されない可能性があります。sudo reboot を実行して再起動するだけで、NVMeからパーティションテーブルを再読み込みできます。
-それでも表示されない場合は、sudo mkfs.btrfs -f -L DATA /dev/nvme0n1p7 を使って強制的にフォーマットできます。
-UUIDを取得する
-
-後で扱いやすくするため、パーティションのUUIDを変数に格納します：
-
+# Setup UUIDs of each partitions for configuration
 BOOT_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p1)
 ROOT_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p2)
 VAR_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p3)
@@ -108,33 +80,23 @@ ML_DATA_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p5)
 SCRATCH_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p6)
 DATA_UUID=$(sudo blkid -s UUID -t TYPE=btrfs /dev/nvme0n1p7 -o value)
 
-BTRFS のパーティションは複数の UUID を持つため、blkid が混乱して空行を返すことがあります。そのため、sudo blkid -s UUID -t TYPE=btrfs /dev/nvme0n1p7 -o valueのコマンドを使用します。
-ファイルにUUIDを保存
-
-作業フォルダを作成する：
-
+# Create folder and variables to hold UUIDs
 mkdir -p ~/nvme-setup
-
 cat > ~/nvme-setup/uuids.txt <<EOF
+BOOT_UUID=$BOOT_UUID
+ROOT_UUID=$ROOT_UUID
+VAR_UUID=$VAR_UUID
+CONTAINERS_UUID=$CONTAINERS_UUID
+ML_DATA_UUID=$ML_DATA_UUID
+SCRATCH_UUID=$SCRATCH_UUID
+DATA_UUID=$DATA_UUID
+EOF
 
->BOOT_UUID=$BOOT_UUID
->ROOT_UUID=$ROOT_UUID
->VAR_UUID=$VAR_UUID
->CONTAINERS_UUID=$CONTAINERS_UUID
->ML_DATA_UUID=$ML_DATA_UUID
->SCRATCH_UUID=$SCRATCH_UUID
->DATA_UUID=$DATA_UUID
->EOF
-
-確認ために、表示されます：
-
+# Check file containing UUIDs
 cat ~/nvme-setup/uuids.txt
 
-マウントポイントを作成する：
-
+# Create folders and mount on partitions
 sudo mkdir -p /mnt/nvme_{boot,root,var,containers,ml,scratch,data}
-
-全てのパーティションをマウントする：
 
 sudo mount /dev/nvme0n1p1 /mnt/nvme_boot
 sudo mount /dev/nvme0n1p2 /mnt/nvme_root
@@ -144,12 +106,9 @@ sudo mount /dev/nvme0n1p5 /mnt/nvme_ml
 sudo mount /dev/nvme0n1p6 /mnt/nvme_scratch
 sudo mount /dev/nvme0n1p7 /mnt/nvme_data
 
-マウントを確認する：
 
+# Check mount points
 df -h | grep nvme
-
-image.png
-ブートパーティション設定（nvme0n1p1）
 
 SD カードのブートパーティションを読み取り専用でマウントする：
 
