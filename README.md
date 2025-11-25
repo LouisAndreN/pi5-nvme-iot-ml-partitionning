@@ -1,6 +1,6 @@
 # Setup of NVMe on Pi5 optimized for Smart Home
 
-This project provides an optimized configuration and partitionning system of a NVMe booted on Raspberry Pi 5, optimized for orchestration of Edge AI devices, ML models and services for an advanced smart home.
+This project provides an optimized configuration and partitionning system on a 1 TB NVMe, booted on Raspberry Pi 5, optimized for orchestration of Edge AI devices, ML models and services for an advanced smart home.
 
 The partitionning system is made as follows :
 
@@ -16,7 +16,7 @@ The partitionning system is made as follows :
 
 
 
-`100 GB root` → OS (Ubuntu + kernels + initramfs + system packages = ~20GB) + Python/C++ dependencies + AI Frameworks (PyTorch, TensorFlow, Hailo SDK) + space for futures updates
+/ 100 GB → OS (Ubuntu + kernels + initramfs + system packages = ~20GB) + Python/C++ dependencies + AI Frameworks (PyTorch, TensorFlow, Hailo SDK) + space for futures updates
 
 /var 120 GB → large space for cache containers and logs (InfluxDB, Prometheus, Grafana）
 
