@@ -33,7 +33,7 @@ The partitionning system is made as follows :
 
 ## How to install
 
-Flash a SD card (max 64Gb) with Ubuntu Server LTS with Raspberry Pi Imager. Plug the SD card and the NVMe on the Pi 5 and boot on the SD card.
+Flash a SD card (max 64GB) with Ubuntu Server LTS with Raspberry Pi Imager. Plug the SD card and the NVMe on the Pi 5 and boot on the SD card.
 Connect by SSH on the Pi.
 Open the commands.sh file and execute all the commands one by one to setup the NVMe.
 Once done, shutdown the Pi 5 and remove only the SD card.
