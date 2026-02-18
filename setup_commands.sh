@@ -104,13 +104,13 @@ sudo vgs vg-main
 # Format LV
 sudo mkfs.ext4 -L VAR /dev/vg-main/lv-var
 sudo mkfs.ext4 -L LOGS /dev/vg-main/lv-logs
-sudo mkfs.xfs  -f -L INFLUXDB /dev/vg-main/lv-influxdb
-sudo mkfs.xfs  -f -L CONTAINERS /dev/vg-main/lv-containers
+sudo mkfs.xfs -f -L INFLUXDB /dev/vg-main/lv-influxdb
+sudo mkfs.xfs -f -L CONTAINERS /dev/vg-main/lv-containers
 sudo mkfs.ext4 -L GRAFANA /dev/vg-main/lv-grafana
-sudo mkfs.xfs  -f -L ML-MODELS /dev/vg-main/lv-ml-models
-sudo mkfs.xfs  -f -L ML-CACHE /dev/vg-main/lv-ml-cache
-sudo mkfs.xfs  -f -L CLOUD-SYNC /dev/vg-main/lv-cloud-sync
-sudo mkfs.xfs  -f -L SCRATCH /dev/vg-main/lv-scratch
+sudo mkfs.xfs -f -L ML-MODELS /dev/vg-main/lv-ml-models
+sudo mkfs.xfs -f -L ML-CACHE /dev/vg-main/lv-ml-cache
+sudo mkfs.xfs -f -L CLOUD-SYNC /dev/vg-main/lv-cloud-sync
+sudo mkfs.xfs -f -L SCRATCH /dev/vg-main/lv-scratch
 sudo mkfs.btrfs -f -L DATA /dev/vg-main/lv-data
 
 # Create subvolumes Btrfs on lv-data
