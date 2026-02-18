@@ -98,6 +98,9 @@ sudo pvcreate /dev/mapper/cryptdata
 # Create VG
 sudo vgcreate vg-main /dev/mapper/cryptdata
 
+# Tuning VG for performance
+sudo vgchange --alloc anywhere vg-main
+
 # Create LV
 sudo lvcreate -L 20G -n lv-var vg-main
 sudo lvcreate -L 30G -n lv-logs vg-main
@@ -109,6 +112,16 @@ sudo lvcreate -L 40G -n lv-ml-cache vg-main
 sudo lvcreate -L 80G -n lv-cloud-sync vg-main
 sudo lvcreate -L 60G -n lv-scratch vg-main
 sudo lvcreate -l 100%FREE -n lv-data vg-main   # ~338 GiB
+
+# InfluxDB (I/O intensif)
+sudo lvchange --readahead 8192 vg-main/lv-influxdb  # 4MB readahead
+sudo lvchange --zero n vg-main/lv-influxdb         # Pas de zero on new blocks
+
+# Cloud-sync (gros transferts)
+sudo lvchange --readahead 16384 vg-main/lv-cloud-sync  # 8MB readahead
+
+# ML-cache (gros fichiers)
+sudo lvchange --readahead 8192 vg-main/lv-ml-cache
 
 # Check
 sudo lvs vg-main
@@ -355,7 +368,39 @@ sudo chroot /mnt/nvme_root /bin/bash
 apt update
 apt full-upgrade -y
 apt install linux-raspi linux-image-raspi linux-headers-raspi linux-firmware-raspi -y
+
+# Copy keyfile in initramfs
+mkdir -p /etc/initramfs-tools/hooks
+cat > /etc/initramfs-tools/hooks/copy-luks-key <<'EOF'
+#!/bin/sh
+PREREQ=""
+prereqs()
+{
+    echo "$PREREQ"
+}
+case $1 in
+    prereqs)
+        prereqs
+        exit 0
+        ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+mkdir -p "${DESTDIR}/boot"
+cp /boot/luks-keyfile "${DESTDIR}/boot/"
+EOF
+
+chmod +x /etc/initramfs-tools/hooks/copy-luks-key
+
+# Add cryptsetup modules
+echo "dm_crypt" >> /etc/initramfs-tools/modules
+echo "aes" >> /etc/initramfs-tools/modules
+echo "sha256" >> /etc/initramfs-tools/modules
+
+# Regenerate initramfs with crypttab + keyfile
 update-initramfs -u -k all
+
+# Exit chroot
 exit
 
 # Copy kernel files
