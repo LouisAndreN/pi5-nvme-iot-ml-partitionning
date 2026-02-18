@@ -229,6 +229,53 @@ sudo mount /dev/vg-main/lv-data /mnt/nvme_data
 # Verify
 df -h | grep nvme
 
+# Copier outils essentiels dans /recovery
+sudo mkdir -p /mnt/nvme_recovery/{tools,scripts,backup}
+
+# Scripts recovery
+sudo tee /mnt/nvme_recovery/scripts/unlock-luks.sh > /dev/null <<'EOF'
+#!/bin/bash
+# Emergency LUKS unlock script
+
+echo "🔓 Unlocking LUKS container..."
+
+if [ -f /boot/luks-keyfile ]; then
+    cryptsetup open /dev/nvme0n1p5 cryptdata --key-file /boot/luks-keyfile
+else
+    echo "⚠️  Keyfile not found, using backup header..."
+    cryptsetup luksHeaderRestore /dev/nvme0n1p5 \
+        --header-backup-file /recovery/backup/luks-header-backup.img
+    cryptsetup open /dev/nvme0n1p5 cryptdata
+fi
+
+vgchange -ay vg-main
+echo "✅ LVM volumes activated"
+EOF
+
+sudo chmod +x /mnt/nvme_recovery/scripts/unlock-luks.sh
+
+# Documentation
+sudo tee /mnt/nvme_recovery/README.txt > /dev/null <<EOF
+EMERGENCY RECOVERY PARTITION
+============================
+
+This partition contains:
+- LUKS header backup (backup/luks-header-backup.img)
+- Recovery scripts (scripts/)
+- Emergency tools
+
+DISASTER RECOVERY STEPS:
+1. Boot from USB/SD card
+2. Mount this partition: mount /dev/nvme0n1p4 /mnt
+3. Run: bash /mnt/scripts/unlock-luks.sh
+4. Mount filesystems as needed
+
+LUKS HEADER RESTORE:
+cryptsetup luksHeaderRestore /dev/nvme0n1p5 \
+    --header-backup-file /mnt/backup/luks-header-backup.img
+
+Created: $(date)
+EOF
 
 ## Copy data from SD
 # Remount SD boot read-only
