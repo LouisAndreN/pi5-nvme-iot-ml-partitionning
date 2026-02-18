@@ -12,7 +12,7 @@ The partitionning system is made as follows :
 | nvme0n1p3               | 16 GB    | swap   | swap                                | Dedicated Swap ML/Hailo (2× RAM, except LVM for performances)                        |
 | nvme0n1p4               | 5 GB     | ext4   | /recovery                           | Emergency rescue : Backup LUKS header + scripts repair + mini-tools (cryptsetup, lvm2, btrfs-progs, ddrescue) |
 | nvme0n1p5               | 838 GB   | LUKS   | cryptdata (encrypted)               | LUKS encryption                                                                      |
-| └─ vg-main              | 838 GB   | LVM    | Volume Group                        | Group LVM Volume on cryptdata                                                        |
+| |- vg-main              | 838 GB   | LVM    | Volume Group                        | Group LVM Volume on cryptdata                                                        |
 | ├─ lv-var               | 20 GB    | ext4   | /var                                | System cache (APT, systemd, tmp)                                                     |
 | ├─ lv-logs              | 30 GB    | ext4   | /var/log                            | Logs ESP32 + HA + Influx + cloud ops (7 days rotation, persistant journald)          |
 | ├─ lv-influxdb          | 120 GB   | xfs    | /var/lib/influxdb                   | IoT Timeseries (tier 1-3 : 48h-30d ; tier 4 >30j S3 export daily through cron/MinIO gateway) |
