@@ -435,6 +435,9 @@ apt update
 apt full-upgrade -y
 apt install linux-raspi linux-image-raspi linux-headers-raspi linux-firmware-raspi -y
 
+# Regenerate initramfs with crypttab + keyfile
+update-initramfs -u -k all
+
 # Copy keyfile in initramfs
 mkdir -p /etc/initramfs-tools/hooks
 cat > /etc/initramfs-tools/hooks/copy-luks-key <<'EOF'
@@ -462,9 +465,6 @@ chmod +x /etc/initramfs-tools/hooks/copy-luks-key
 echo "dm_crypt" >> /etc/initramfs-tools/modules
 echo "aes" >> /etc/initramfs-tools/modules
 echo "sha256" >> /etc/initramfs-tools/modules
-
-# Regenerate initramfs with crypttab + keyfile
-update-initramfs -u -k all
 
 # Exit chroot
 exit
