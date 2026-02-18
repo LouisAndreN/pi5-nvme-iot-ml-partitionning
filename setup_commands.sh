@@ -1,4 +1,8 @@
-# Pi 5 NVMe Setup - Command Reference for Ubuntu Server 24.04 LTS boot
+# Pi 5 NVMe 1To Setup - Command Reference for Ubuntu Server 24.04 LTS boot
+
+# Install needed packages
+sudo apt update
+sudo apt install -y lvm2 cryptsetup btrfs-progs xfsprogs parted rsync mc awscli  # mc = MinIO client, awscli pour S3
 
 ## Prerequisites Check
 
@@ -24,8 +28,8 @@ sudo mount | grep nvme
 sudo wipefs -a /dev/nvme0n1
 
 # Erase beginning and end of NVMe
-sudo dd if=/dev/zero of=/dev/nvme0n1 bs=1M count=10
-sudo dd if=/dev/zero of=/dev/nvme0n1 bs=1M count=10 seek=$((`sudo blockdev --getsz /dev/nvme0n1` / 2048 - 10))
+sudo dd if=/dev/zero of=/dev/nvme0n1 bs=1M count=100 status=progress
+sudo dd if=/dev/zero of=/dev/nvme0n1 bs=1M count=100 seek=$((`sudo blockdev --getsz /dev/nvme0n1` / 2048 - 100)) status=progress
 
 # Verify clean
 sudo blkid /dev/nvme0n1  # Should return nothing
@@ -42,13 +46,11 @@ sudo parted /dev/nvme0n1
 # In parted shell:
 mklabel gpt
 
-mkpart primary fat32 1MiB 1025MiB
-mkpart primary ext4 1025MiB 101GiB
-mkpart primary ext4 101GiB 241GiB
-mkpart primary ext4 241GiB 421GiB
-mkpart primary ext4 421GiB 651GiB
-mkpart primary xfs 651GiB 711GiB
-mkpart primary btrfs 711GiB 100%
+mkpart primary fat32 1MiB 1025MiB            # p1 : /boot/firmware 1 GiB
+mkpart primary ext4 1025MiB 101GiB          # p2 : / 100 GiB
+mkpart primary linux-swap 101GiB 117GiB      # p3 : swap 16 GiB
+mkpart primary ext4 117GiB 122GiB          # p4 : /recovery 5 GiB
+mkpart primary 122GiB 100%                  # p5 : LUKS 838 GiB (le reste)
 
 set 1 boot on
 set 1 esp on
@@ -56,63 +58,134 @@ set 1 esp on
 print  # Verify
 quit
 
+
 ## Format partitions
-sudo mkfs.vfat -F32 -n system-boot /dev/nvme0n1p1
-sudo mkfs.ext4 -L writable /dev/nvme0n1p2
-sudo mkfs.ext4 /dev/nvme0n1p3
-sudo mkfs.ext4 -L CONTAINERS /dev/nvme0n1p4
-sudo mkfs.ext4 -L ML-DATA /dev/nvme0n1p5
-sudo mkfs.xfs -f /dev/nvme0n1p6
-sudo mkfs.btrfs -f -L DATA /dev/nvme0n1p7
+# p1 boot
+sudo mkfs.vfat -F32 -n BOOT-FW /dev/nvme0n1p1
 
-# Verify
-sudo lsblk -f /dev/nvme0n1
+# p2 root
+sudo mkfs.ext4 -L ROOT /dev/nvme0n1p2
+
+# p3 swap
+sudo mkswap -L SWAP-ML /dev/nvme0n1p3
+
+# p4 recovery
+sudo mkfs.ext4 -L RECOVERY /dev/nvme0n1p4
+
+# p5 LUKS (encryption)
+sudo cryptsetup luksFormat /dev/nvme0n1p5
+# Choose very strong passphrase and save it !
+
+# Open LUKS container
+sudo cryptsetup open /dev/nvme0n1p5 cryptdata
+
+# Create PV LVM on opened container
+sudo pvcreate /dev/mapper/cryptdata
+
+# Create VG
+sudo vgcreate vg-main /dev/mapper/cryptdata
+
+# Create LV
+sudo lvcreate -L 20G -n lv-var vg-main
+sudo lvcreate -L 30G -n lv-logs vg-main
+sudo lvcreate -L 120G -n lv-influxdb vg-main
+sudo lvcreate -L 80G -n lv-containers vg-main
+sudo lvcreate -L 10G -n lv-grafana vg-main
+sudo lvcreate -L 60G -n lv-ml-models vg-main
+sudo lvcreate -L 40G -n lv-ml-cache vg-main
+sudo lvcreate -L 80G -n lv-cloud-sync vg-main
+sudo lvcreate -L 60G -n lv-scratch vg-main
+sudo lvcreate -l 100%FREE -n lv-data vg-main   # ~338 GiB
+
+# Check
+sudo lvs vg-main
+sudo vgs vg-main
+
+# Format LV
+sudo mkfs.ext4 -L VAR /dev/vg-main/lv-var
+sudo mkfs.ext4 -L LOGS /dev/vg-main/lv-logs
+sudo mkfs.xfs  -f -L INFLUXDB /dev/vg-main/lv-influxdb
+sudo mkfs.xfs  -f -L CONTAINERS /dev/vg-main/lv-containers
+sudo mkfs.ext4 -L GRAFANA /dev/vg-main/lv-grafana
+sudo mkfs.xfs  -f -L ML-MODELS /dev/vg-main/lv-ml-models
+sudo mkfs.xfs  -f -L ML-CACHE /dev/vg-main/lv-ml-cache
+sudo mkfs.xfs  -f -L CLOUD-SYNC /dev/vg-main/lv-cloud-sync
+sudo mkfs.xfs  -f -L SCRATCH /dev/vg-main/lv-scratch
+sudo mkfs.btrfs -f -L DATA /dev/vg-main/lv-data
+
+# Create subvolumes Btrfs on lv-data
+sudo mount /dev/vg-main/lv-data /mnt
+sudo btrfs subvolume create /mnt/@iot-hot
+sudo btrfs subvolume create /mnt/@iot-archives
+sudo btrfs subvolume create /mnt/@backups
+sudo btrfs subvolume create /mnt/@personal
+sudo umount /mnt
 
 
-## Save UUIDs
+## Save UUIDs and LUKS mapper
+mkdir -p ~/nvme-setup
 
-# Get UUIDs
-BOOT_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p1)
-ROOT_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p2)
-VAR_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p3)
-CONTAINERS_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p4)
-ML_DATA_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p5)
-SCRATCH_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p6)
-DATA_UUID=$(sudo blkid -s UUID -t TYPE=btrfs /dev/nvme0n1p7 -o value)
+BOOT_UUID=$(blkid -s UUID -o value /dev/nvme0n1p1)
+ROOT_UUID=$(blkid -s UUID -o value /dev/nvme0n1p2)
+SWAP_UUID=$(blkid -s UUID -o value /dev/nvme0n1p3)
+RECOVERY_UUID=$(blkid -s UUID -o value /dev/nvme0n1p4)
 
-# Save to file
-sudo mkdir -p ~/nvme-setup
+VAR_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-var)
+LOGS_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-logs)
+INFLUXDB_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-influxdb)
+CONTAINERS_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-containers)
+GRAFANA_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-grafana)
+MLMODELS_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-ml-models)
+MLCACHE_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-ml-cache)
+CLOUDSYNC_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-cloud-sync)
+SCRATCH_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-scratch)
+DATA_UUID=$(blkid -s UUID -o value /dev/vg-main/lv-data)
+
 cat > ~/nvme-setup/uuids.txt <<EOF
 BOOT_UUID=$BOOT_UUID
 ROOT_UUID=$ROOT_UUID
+SWAP_UUID=$SWAP_UUID
+RECOVERY_UUID=$RECOVERY_UUID
 VAR_UUID=$VAR_UUID
+LOGS_UUID=$LOGS_UUID
+INFLUXDB_UUID=$INFLUXDB_UUID
 CONTAINERS_UUID=$CONTAINERS_UUID
-ML_DATA_UUID=$ML_DATA_UUID
+GRAFANA_UUID=$GRAFANA_UUID
+MLMODELS_UUID=$MLMODELS_UUID
+MLCACHE_UUID=$MLCACHE_UUID
+CLOUDSYNC_UUID=$CLOUDSYNC_UUID
 SCRATCH_UUID=$SCRATCH_UUID
 DATA_UUID=$DATA_UUID
 EOF
 
-# Verify
 cat ~/nvme-setup/uuids.txt
 
 ## Mount all
 
 # Create mount points
-sudo mkdir -p /mnt/nvme_{boot,root,var,containers,ml,scratch,data}
+sudo mkdir -p /mnt/nvme_{boot,root,recovery,var,logs,influxdb,containers,grafana,ml-models,ml-cache,cloud-sync,scratch,data}
 
 # Mount
 sudo mount /dev/nvme0n1p1 /mnt/nvme_boot
 sudo mount /dev/nvme0n1p2 /mnt/nvme_root
-sudo mount /dev/nvme0n1p3 /mnt/nvme_var
-sudo mount /dev/nvme0n1p4 /mnt/nvme_containers
-sudo mount /dev/nvme0n1p5 /mnt/nvme_ml
-sudo mount /dev/nvme0n1p6 /mnt/nvme_scratch
-sudo mount /dev/nvme0n1p7 /mnt/nvme_data
+sudo mount /dev/nvme0n1p4 /mnt/nvme_recovery
+sudo mount /dev/vg-main/lv-var /mnt/nvme_var
+sudo mount /dev/vg-main/lv-logs /mnt/nvme_logs
+sudo mount /dev/vg-main/lv-influxdb /mnt/nvme_influxdb
+sudo mount /dev/vg-main/lv-containers /mnt/nvme_containers
+sudo mount /dev/vg-main/lv-grafana /mnt/nvme_grafana
+sudo mount /dev/vg-main/lv-ml-models /mnt/nvme_ml-models
+sudo mount /dev/vg-main/lv-ml-cache /mnt/nvme_ml-cache
+sudo mount /dev/vg-main/lv-cloud-sync /mnt/nvme_cloud-sync
+sudo mount /dev/vg-main/lv-scratch /mnt/nvme_scratch
+sudo mount /dev/vg-main/lv-data /mnt/nvme_data
+
 
 # Verify
 df -h | grep nvme
 
-## Copy boot partition
+
+## Copy data from SD
 # Remount SD boot read-only
 sudo mount -o remount,ro /boot/firmware
 
@@ -147,7 +220,7 @@ sudo du -sh /mnt/nvme_root/
 
 # Create missing directories
 sudo mkdir -p /mnt/nvme_root/{boot/firmware,proc,sys,dev,run,tmp,mnt,media}
-sudo mkdir -p /mnt/nvme_root/mnt/{ml-data,scratch,data}
+sudo mkdir -p /mnt/nvme_root/mnt/{ml-models,ml-cache,cloud-sync,scratch,data}
 sudo mkdir -p /mnt/nvme_root/var/lib/containers
 
 
@@ -170,34 +243,50 @@ sudo nano /mnt/nvme_boot/cmdline.txt
 
 # Content (single line):
 ```
-console=serial0,115200 multipath=off dwc_otg.lpm_enable=0 console=tty1 root=LABEL=writable rootfstype=ext4 rootwait fixrtc cfg80211.ieee80211_regdom=JP
+console=serial0,115200 multipath=off dwc_otg.lpm_enable=0 console=tty1 root=LABEL=ROOT rootfstype=ext4 rootwait fixrtc cfg80211.ieee80211_regdom=JP
 ```
 
 # Verify:
 wc -l /mnt/nvme_boot/cmdline.txt  # Should output: 1
 
-## Configure fstab
+## Configure /etc/fstab
 # Load UUIDs
 source ~/nvme-setup/uuids.txt
 
 # Create fstab
 sudo tee /mnt/nvme_root/etc/fstab > /dev/null <<EOF
-UUID=$BOOT_UUID  /boot/firmware  vfat  defaults  0  2
-UUID=$ROOT_UUID  /  ext4  defaults,noatime  0  1
+UUID=$BOOT_UUID       /boot/firmware          vfat    defaults                          0 2
+UUID=$ROOT_UUID       /                       ext4    defaults,noatime                  0 1
+UUID=$SWAP_UUID       none                    swap    sw                                0 0
+UUID=$RECOVERY_UUID   /recovery               ext4    defaults,noatime                  0 2
 
-UUID=$VAR_UUID  /var  ext4  defaults,noatime,barrier=1  0  2
-UUID=$CONTAINERS_UUID  /var/lib/containers  ext4  defaults,noatime,nodiratime,data=ordered  0  2
+/dev/vg-main/lv-var       /var                    ext4    defaults,noatime,nodiratime       0 2
+/dev/vg-main/lv-logs      /var/log                ext4    defaults,noatime,nodiratime       0 2
+/dev/vg-main/lv-influxdb  /var/lib/influxdb       xfs     defaults,noatime,nodiratime,allocsize=16m,largeio,inode64  0 2
+/dev/vg-main/lv-containers /var/lib/containers    xfs     defaults,noatime,nodiratime,allocsize=16m  0 2
+/dev/vg-main/lv-grafana   /var/lib/grafana        ext4    defaults,noatime,nodiratime       0 2
+/dev/vg-main/lv-ml-models /mnt/ml-models           xfs     defaults,noatime,nodiratime,allocsize=16m,largeio  0 2
+/dev/vg-main/lv-ml-cache  /mnt/ml-cache           xfs     defaults,noatime,nodiratime,allocsize=16m  0 2
+/dev/vg-main/lv-cloud-sync /mnt/cloud-sync         xfs     defaults,noatime,nodiratime,allocsize=16m  0 2
+/dev/vg-main/lv-scratch   /mnt/scratch            xfs     defaults,noatime,nodiratime,allocsize=16m,nobarrier  0 2
+/dev/vg-main/lv-data      /mnt/data               btrfs   defaults,noatime,compress=zstd:3,space_cache=v2,autodefrag  0 2
 
-UUID=$ML_DATA_UUID  /mnt/ml-data  ext4  defaults,noatime,nodiratime,data=writeback,commit=30  0  2
-UUID=$SCRATCH_UUID  /mnt/scratch  xfs  defaults,noatime,nodiratime,allocsize=16m,largeio  0  2
-
-UUID=$DATA_UUID  /mnt/data  btrfs  defaults,noatime,compress=zstd:3,space_cache=v2,autodefrag,commit=120  0  2
-
-tmpfs  /tmp  tmpfs  defaults,noatime,nosuid,nodev,size=2G  0  0
+tmpfs                     /tmp                    tmpfs   defaults,noatime,nosuid,nodev,size=2G  0 0
+tmpfs                     /var/tmp                tmpfs   defaults,noatime,nosuid,nodev,size=1G  0 0
 EOF
 
 # Verify
 cat /mnt/nvme_root/etc/fstab
+
+## Configure crypttab (automatic unlock with keyfile - headless)
+sudo dd if=/dev/urandom of=/mnt/nvme_boot/luks-keyfile bs=512 count=1
+sudo chmod 400 /mnt/nvme_boot/luks-keyfile
+sudo cryptsetup luksAddKey /dev/nvme0n1p5 /mnt/nvme_boot/luks-keyfile
+
+# Add to crypttab
+sudo tee /mnt/nvme_root/etc/crypttab > /dev/null <<EOF
+cryptdata UUID=$(blkid -s UUID -o value /dev/nvme0n1p5) /boot/luks-keyfile luks,discard
+EOF
 
 ## Update EEPROM
 sudo rpi-eeprom-config --edit
@@ -230,8 +319,8 @@ initramfs initrd.img followkernel
 dtparam=pciex1
 ```
 
-## System Update (chroot)
-# Fix resolv.conf
+## Update system (chroot)
+# Fix resolv.conf (DNS)
 sudo rm /mnt/nvme_root/etc/resolv.conf
 sudo cp /etc/resolv.conf /mnt/nvme_root/etc/resolv.conf
 
@@ -250,7 +339,7 @@ sudo chroot /mnt/nvme_root /bin/bash
 apt update
 apt full-upgrade -y
 apt install linux-raspi linux-image-raspi linux-headers-raspi linux-firmware-raspi -y
-update-initramfs -c -k $(uname -r)
+update-initramfs -u -k all
 exit
 
 # Copy kernel files
@@ -274,4 +363,4 @@ sudo umount /mnt/nvme_boot
 # Poweroff
 sudo poweroff
 
-# Remove SD card and boot from NVMe!
+# Remove SD card and it should boot from NVMe
