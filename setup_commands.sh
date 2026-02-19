@@ -630,6 +630,17 @@ if ! mount | grep '/mnt/data' | grep -q 'compress=zstd'; then
 fi
 echo "✅ BTRFS compression active"
 
+# Check BTRFS subvolume mount units
+echo ""
+echo "Checking BTRFS subvolume systemd units..."
+for unit in mnt-data-archives.mount mnt-data-backups.mount mnt-data-personal.mount; do
+    if systemctl is-active "$unit" &>/dev/null; then
+        echo "  ✅ $unit"
+    else
+        echo "  ⚠️  $unit not active (run: systemctl start $unit)"
+    fi
+done
+
 # Check swap
 if ! swapon --show | grep -q 'nvme0n1p3'; then
     echo "❌ Swap not active!"
@@ -668,7 +679,7 @@ sync
 # Unmount
 sudo umount -lR /mnt/nvme_root
 sudo umount /mnt/nvme_boot
-
+sudo umount /mnt/nvme_recovery
 
 
 # Poweroff
