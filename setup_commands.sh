@@ -78,9 +78,12 @@ sudo mkfs.ext4 -L RECOVERY /dev/nvme0n1p4
 #   - Algorithm: AES-XTS-256 (512-bit key)
 #   - PBKDF: Argon2id (GPU-resistant)
 #   - Sector size: 4096 bytes (NVMe native) (better performance but compatible only with kernel 5.9+)
-#   - Iteration time: 1000ms (fast boot)
-sudo cryptsetup luksFormat /dev/nvme0n1p5 --type luks2 --cipher aes-xts-plain64 --key-size 512 --pbkdf argon2id --iter-time 1000 --label "cryptdata"
+#   - Iteration time: 2000ms (fast boot)
+sudo cryptsetup luksFormat /dev/nvme0n1p5 --type luks2 --cipher aes-xts-plain64 --key-size 512 --pbkdf argon2id --iter-time 2000 --label "cryptdata"
 # Choose very strong passphrase and save it !
+
+# Verification : PBKDF: argon2id, Time cost, Memory, Threads, Cipher, Sector size=4096
+sudo cryptsetup luksDump /dev/nvme0n1p5
 
 # Backup LUKS header
 sudo cryptsetup luksHeaderBackup /dev/nvme0n1p5 \
