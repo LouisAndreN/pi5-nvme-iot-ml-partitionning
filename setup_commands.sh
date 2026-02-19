@@ -48,9 +48,9 @@ mklabel gpt
 
 mkpart primary fat32 1MiB 1025MiB            # p1 : /boot/firmware 1 GiB
 mkpart primary ext4 1025MiB 101GiB          # p2 : / 100 GiB
-mkpart primary linux-swap 101GiB 117GiB      # p3 : swap 16 GiB
-mkpart primary ext4 117GiB 122GiB          # p4 : /recovery 5 GiB
-mkpart primary 122GiB 100%                  # p5 : LUKS 838 GiB (le reste)
+mkpart primary linux-swap 101GiB 105GiB  # p3 : 4 GB
+mkpart primary ext4 105GiB 110GiB        # p4 : /recovery 5 GB
+mkpart primary 110GiB 100%               # p5 : LUKS 850 GB
 
 set 1 boot on
 set 1 esp on
@@ -111,7 +111,7 @@ sudo lvcreate -L 60G -n lv-ml-models vg-main
 sudo lvcreate -L 40G -n lv-ml-cache vg-main
 sudo lvcreate -L 80G -n lv-cloud-sync vg-main
 sudo lvcreate -L 60G -n lv-scratch vg-main
-sudo lvcreate -l 100%FREE -n lv-data vg-main   # ~338 GiB
+sudo lvcreate -l 100%FREE -n lv-data vg-main   # ~350 GiB
 
 # InfluxDB (I/O intensif)
 sudo lvchange --readahead 8192 vg-main/lv-influxdb  # 4MB readahead
@@ -368,6 +368,7 @@ wc -l /mnt/nvme_boot/cmdline.txt  # Should output: 1
 source ~/nvme-setup/uuids.txt
 
 # Create fstab
+# Scratch (nobarrier OK: temporary data only, power loss acceptable)
 sudo tee /mnt/nvme_root/etc/fstab > /dev/null <<EOF
 UUID=$BOOT_UUID       /boot/firmware          vfat    defaults                          0 2
 UUID=$ROOT_UUID       /                       ext4    defaults,noatime                  0 1
@@ -376,14 +377,14 @@ UUID=$RECOVERY_UUID   /recovery               ext4    defaults,noatime          
 
 /dev/vg-main/lv-var       /var                    ext4    defaults,noatime,nodiratime       0 2
 /dev/vg-main/lv-logs      /var/log                ext4    defaults,noatime,nodiratime       0 2
-/dev/vg-main/lv-influxdb  /var/lib/influxdb       xfs     defaults,noatime,nodiratime,allocsize=16m,largeio,inode64  0 2
-/dev/vg-main/lv-containers /var/lib/containers    xfs     defaults,noatime,nodiratime,allocsize=16m  0 2
+/dev/vg-main/lv-influxdb  /var/lib/influxdb       xfs     defaults,noatime,allocsize=16m,inode64  0 2
+/dev/vg-main/lv-containers /var/lib/containers    xfs     defaults,noatime,allocsize=16m  0 2
 /dev/vg-main/lv-grafana   /var/lib/grafana        ext4    defaults,noatime,nodiratime       0 2
-/dev/vg-main/lv-ml-models /mnt/ml-models           xfs     defaults,noatime,nodiratime,allocsize=16m,largeio  0 2
-/dev/vg-main/lv-ml-cache  /mnt/ml-cache           xfs     defaults,noatime,nodiratime,allocsize=16m  0 2
-/dev/vg-main/lv-cloud-sync /mnt/cloud-sync         xfs     defaults,noatime,nodiratime,allocsize=64m,largeio,inode64  0 2
-/dev/vg-main/lv-scratch   /mnt/scratch            xfs     defaults,noatime,nodiratime,allocsize=16m,nobarrier,logbsize=256k  0 2
-/dev/vg-main/lv-data      /mnt/data               btrfs   defaults,noatime,compress=zstd:3,space_cache=v2,autodefrag,subvol=@iot-hot  0 2
+/dev/vg-main/lv-ml-models /mnt/ml-models           xfs     defaults,noatime,allocsize=16m  0 2
+/dev/vg-main/lv-ml-cache  /mnt/ml-cache           xfs     defaults,noatime,allocsize=16m  0 2
+/dev/vg-main/lv-cloud-sync /mnt/cloud-sync         xfs     defaults,noatime,allocsize=64m,inode64  0 2
+/dev/vg-main/lv-scratch   /mnt/scratch            xfs     defaults,noatime,allocsize=16m,nobarrier,logbsize=256k  0 2
+/dev/vg-main/lv-data      /mnt/data               btrfs   defaults,noatime,compress=zstd:3,space_cache=v2,subvol=@iot-hot  0 2
 
 tmpfs                     /tmp                    tmpfs   defaults,noatime,nosuid,nodev,size=2G  0 0
 tmpfs                     /var/tmp                tmpfs   defaults,noatime,nosuid,nodev,size=1G  0 0
