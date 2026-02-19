@@ -578,14 +578,6 @@ sudo systemctl enable fstrim.timer
 sudo systemctl start fstrim.timer
 
 
-## Final Steps
-# Sync
-sync
-
-# Unmount
-sudo umount -lR /mnt/nvme_root
-sudo umount /mnt/nvme_boot
-
 ## Create post-boot verification script
 sudo tee /mnt/nvme_root/opt/verify-boot.sh > /dev/null <<'EOF'
 #!/bin/bash
@@ -664,6 +656,17 @@ echo "3. Configure monitoring: /opt/scripts/disk_monitor.sh"
 EOF
 
 sudo chmod +x /mnt/nvme_root/opt/verify-boot.sh
+
+
+## Final Steps
+# Sync
+sync
+
+# Unmount
+sudo umount -lR /mnt/nvme_root
+sudo umount /mnt/nvme_boot
+
+
 
 # Poweroff
 sudo poweroff
