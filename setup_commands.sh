@@ -552,7 +552,7 @@ echo "✅ TRIM configured"
 
 # Disk usage report
 echo ""
-echo "📊 Disk usage:"
+echo "Disk usage:"
 df -h | grep -E '(Filesystem|nvme0n1|vg-main)'
 
 echo ""
