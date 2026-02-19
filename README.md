@@ -1,7 +1,7 @@
 # NVMe Encrypted LVM Setup for Edge IoT/ML on Raspberry Pi 5
 
 This project provides an optimized configuration and partitionning system on a 1 TB NVMe, booted on Raspberry Pi 5, optimized for orchestration of Edge AI devices, ML models and services for an advanced smart home.
-It uses Ubuntu Server LTS 23.03.4.
+It uses Ubuntu Server LTS 23.03.4 and tested on Micron 2200 NVMe – ~3200 MB/s read/write
 
 The partitionning system is made as follows :
 
