@@ -5,6 +5,9 @@ It uses Ubuntu Server LTS 23.03.4 and tested on Micron 2200 NVMe – read: BW=~8
 
 The script `/opt/verify-boot.sh` is generated automatically during the installation and launched manually after the first boot on NVMe to validate all mounts LUKS, LVM, FS tuning, TRIM, etc.
 
+Sauvegarde chiffrée de la clé LUKS sur AWS S3/Azure Blob via rsync avec rotation et versioning
+Sauvegarde incrémentale Btrfs lv-data vers cloud via snapshots send/receive via lv-cloud-sync
+
 The partitionning system is made as follows :
 
 | Partition / LV          | Size     | FSType | Mount Point / Name                  | Utility / Description                                                                |
