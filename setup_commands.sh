@@ -1,4 +1,4 @@
-# Pi 5 NVMe 1To Setup - Command Reference for Ubuntu Server 23.03.4 LTS boot
+# Pi 5 NVMe 1To Setup - Command Reference for Ubuntu Server 24.04 LTS boot
 
 # Install needed packages
 sudo apt update
@@ -451,6 +451,9 @@ sudo mkdir -p /mnt/nvme_root/mnt/data/{archives,backups,personal}
 sudo dd if=/dev/urandom of=/mnt/nvme_boot/luks-keyfile bs=512 count=1
 sudo chmod 400 /mnt/nvme_boot/luks-keyfile
 sudo cryptsetup luksAddKey /dev/nvme0n1p5 /mnt/nvme_boot/luks-keyfile
+
+sudo cp /mnt/nvme_boot/luks-keyfile /mnt/nvme_recovery/backup/
+sudo chmod 400 /mnt/nvme_recovery/backup/luks-keyfile
 
 # Add to crypttab
 sudo tee /mnt/nvme_root/etc/crypttab > /dev/null <<EOF
