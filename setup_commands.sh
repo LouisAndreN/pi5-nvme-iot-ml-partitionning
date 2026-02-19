@@ -513,6 +513,20 @@ apt update
 apt full-upgrade -y
 apt install linux-raspi linux-image-raspi linux-headers-raspi linux-firmware-raspi -y
 
+
+# Install zram generator
+apt install -y systemd-zram-generator
+
+# Configure zram (4GB compressed swap in RAM)
+cat > /etc/systemd/zram-generator.conf <<'ZRAMEOF'
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+swap-priority = 100
+fs-type = swap
+ZRAMEOF
+
+
 # Copy keyfile in initramfs
 mkdir -p /etc/initramfs-tools/hooks
 cat > /etc/initramfs-tools/hooks/copy-luks-key <<'EOF'
