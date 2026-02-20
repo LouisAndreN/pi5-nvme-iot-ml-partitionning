@@ -746,3 +746,10 @@ sudo umount /mnt/nvme_recovery
 sudo poweroff
 
 # Remove SD card and it should boot from NVMe
+
+# After first boot on NVMe, check the following :
+#    - Launch /opt/verify-boot.sh => is everything checked ?
+#    - dmesg | grep -iE 'nvme|pcie|aer|error|crc|timeout|reset|luks|crypt' => no PCIe errors ?
+#    - cryptsetup status cryptdata => sector_size=4096 and active ?
+#    - fio to validate performances :textsudo apt install fio
+#        fio --name=seqread --ioengine=libaio --direct=1 --rw=read --bs=128k --numjobs=1 --iodepth=32 --size=4g --runtime=30 --group_reporting => ~700–900 MB/s for Gen3
