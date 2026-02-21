@@ -165,6 +165,9 @@ sudo xfs_repair -n /dev/vg-main/lv-ml-cache
 sudo xfs_repair -n /dev/vg-main/lv-cloud-sync
 sudo xfs_repair -n /dev/vg-main/lv-scratch
 
+# Unmount nvme_recovery
+sudo umount /mnt/nvme_recovery
+
 # Check ext4
 sudo e2fsck -fn /dev/nvme0n1p2  # root
 sudo e2fsck -fn /dev/nvme0n1p4  # recovery
