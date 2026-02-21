@@ -564,11 +564,11 @@ esac
 
 . /usr/share/initramfs-tools/hook-functions
 
-# Check keyfile existe
+# Check keyfile exists
 if [ ! -f /boot/luks-keyfile ]; then
     echo "WARNING: /boot/luks-keyfile not found!" >&2
     echo "LUKS will require manual passphrase at boot!" >&2
-    exit 0  # Continue sans erreur (fallback passphrase)
+    exit 0  # Continue without error (fallback passphrase)
 fi
 
 # Copy keyfile to initramfs
@@ -606,8 +606,8 @@ systemctl enable mnt-data-personal.mount
 exit
 
 # Copy kernel files
-sudo cp /mnt/nvme_root/boot/vmlinuz-* /mnt/nvme_boot/vmlinuz
-sudo cp /mnt/nvme_root/boot/initrd.img-* /mnt/nvme_boot/initrd.img
+sudo cp /mnt/nvme_root/boot/vmlinuz-* /mnt/nvme_boot/
+sudo cp /mnt/nvme_root/boot/initrd.img-* /mnt/nvme_boot/
 
 
 ## Enable TRIM
@@ -737,10 +737,18 @@ sudo chmod +x /mnt/nvme_root/opt/verify-boot.sh
 # Sync
 sync
 
+# Clean chroot mounts
+sudo umount -l /mnt/nvme_root/proc 2>/dev/null
+sudo umount -l /mnt/nvme_root/sys 2>/dev/null
+sudo umount -l /mnt/nvme_root/dev/pts 2>/dev/null
+sudo umount -l /mnt/nvme_root/dev 2>/dev/null
+sudo umount -l /mnt/nvme_root/run 2>/dev/null
+sudo umount -l /mnt/nvme_root/tmp 2>/dev/null
+
 # Unmount
-sudo umount -lR /mnt/nvme_root
-sudo umount /mnt/nvme_boot
-sudo umount /mnt/nvme_recovery
+sudo umount -l /mnt/nvme_boot 2>/dev/null
+sudo umount -l /mnt/nvme_recovery 2>/dev/null
+sudo umount -lR /mnt/nvme_root 2>/dev/null
 
 
 # Poweroff
