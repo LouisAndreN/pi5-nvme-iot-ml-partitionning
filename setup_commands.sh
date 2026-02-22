@@ -517,15 +517,33 @@ sudo rm /mnt/nvme_root/etc/resolv.conf
 sudo cp /etc/resolv.conf /mnt/nvme_root/etc/resolv.conf
 
 # Mount system filesystems
-sudo mount -t proc /proc /mnt/nvme_root/proc
-sudo mount -t sysfs /sys /mnt/nvme_root/sys
+sudo mount /dev/nvme0n1p2 /mnt/nvme_root
+sudo mount /dev/nvme0n1p1 /mnt/nvme_root/boot/firmware
+
+# Mount dev with rbind + rslave (really important for /dev/null, /dev/pts, etc.)
 sudo mount --rbind /dev /mnt/nvme_root/dev
-sudo mount -t devpts devpts /mnt/nvme_root/dev/pts
-sudo mount --bind /run /mnt/nvme_root/run
-sudo mount -t tmpfs tmpfs /mnt/nvme_root/tmp
+sudo mount --make-rslave /mnt/nvme_root/dev
+
+sudo mount --bind /dev/pts /mnt/nvme_root/dev/pts
+sudo mount --make-slave /mnt/nvme_root/dev/pts
+
+# Proc/sys/run with rbind/slave
+sudo mount --rbind /proc /mnt/nvme_root/proc
+sudo mount --make-rslave /mnt/nvme_root/proc
+
+sudo mount --rbind /sys /mnt/nvme_root/sys
+sudo mount --make-rslave /mnt/nvme_root/sys
+
+sudo mount --rbind /run /mnt/nvme_root/run
+sudo mount --make-rslave /mnt/nvme_root/run
 
 # Enter chroot
 sudo chroot /mnt/nvme_root /bin/bash
+
+# Check critical files
+ls -l /proc/mounts     # Should exist
+cat /proc/cmdline      # Should show current cmdline (SD)
+ls -l /boot/firmware/luks-keyfile
 
 # Inside chroot:
 apt update
@@ -593,6 +611,10 @@ chmod +x /etc/initramfs-tools/hooks/copy-luks-key
 echo "dm_crypt" >> /etc/initramfs-tools/modules
 echo "aes" >> /etc/initramfs-tools/modules
 echo "sha256" >> /etc/initramfs-tools/modules
+
+# Force copy of luks-keyfile before regenerate initramfs
+cp /boot/firmware/luks-keyfile /boot/luks-keyfile
+chmod 400 /boot/luks-keyfile
 
 # Regenerate initramfs with crypttab + keyfile
 update-initramfs -u -k all
