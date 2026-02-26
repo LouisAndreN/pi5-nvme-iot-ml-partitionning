@@ -611,6 +611,7 @@ chmod +x /etc/initramfs-tools/hooks/copy-luks-key
 
 # Add cryptsetup modules
 echo "dm_crypt" >> /etc/initramfs-tools/modules
+echo "dm-mod" >> /etc/initramfs-tools/modules
 echo "aes" >> /etc/initramfs-tools/modules
 echo "sha256" >> /etc/initramfs-tools/modules
 
@@ -619,20 +620,11 @@ cp /boot/firmware/luks-keyfile /boot/luks-keyfile
 chmod 400 /boot/luks-keyfile
 
 
-
 # Check dm_crypt in modules list
 grep -r "dm.crypt\|dm-crypt" /etc/initramfs-tools/modules
 
-# If absent:
-echo "dm_crypt" >> /etc/initramfs-tools/modules
-echo "dm-mod" >> /etc/initramfs-tools/modules
-
 # Check modules crypto
 grep -E "^(aes|sha256)" /etc/initramfs-tools/modules
-
-# If absent:
-echo "aes" >> /etc/initramfs-tools/modules
-echo "sha256" >> /etc/initramfs-tools/modules
 
 
 
