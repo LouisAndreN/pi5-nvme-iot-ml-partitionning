@@ -478,13 +478,16 @@ cryptdata UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p5) /boot/luks-keyfile 
 EOF
 
 ## Update EEPROM
-sudo tee rpi-eeprom-config > /dev/null <<EOF
-[all]
+EEPROM_TMP=$(mktemp)
+sudo rpi-eeprom-config > "$EEPROM_TMP"
+cat >> "$EEPROM_TMP" <<EOF
 BOOT_UART=0
 POWER_OFF_ON_HALT=0
 BOOT_ORDER=0xf641
 PCIE_PROBE=1
 EOF
+sudo rpi-eeprom-config --apply "$EEPROM_TMP"
+rm "$EEPROM_TMP"
 
 # Apply:
 sudo rpi-eeprom-update -a
@@ -571,7 +574,6 @@ sudo rm /mnt/nvme_root/etc/resolv.conf
 sudo cp /etc/resolv.conf /mnt/nvme_root/etc/resolv.conf
 
 # Mount system filesystems
-sudo mount /dev/nvme0n1p2 /mnt/nvme_root
 sudo mount /dev/nvme0n1p1 /mnt/nvme_root/boot/firmware
 
 # Mount dev with rbind + rslave (really important for /dev/null, /dev/pts, etc.)
@@ -690,7 +692,9 @@ ls -lh /boot/initrd.img-*
 LATEST_INITRD=$(ls -v /boot/initrd.img-* | tail -n 1)
 
 # Check if dm.crypt present
-lsinitramfs "$LATEST_INITRD" | grep -q "dm.crypt"
+lsinitramfs "$LATEST_INITRD" | grep -q "dm.crypt" \
+    || { echo "[ERROR] dm_crypt NOT in initramfs — LUKS boot will fail!"; exit 1; }
+echo "[OK] dm_crypt present in initramfs"
 
 # Enable BTRFS subvolume mount units
 systemctl enable mnt-data-archives.mount
