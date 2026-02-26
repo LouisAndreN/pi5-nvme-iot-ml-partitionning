@@ -180,7 +180,7 @@ sudo btrfs check --readonly /dev/vg-main/lv-data
 
 
 ## Save UUIDs and LUKS mapper
-sudo mkdir -p ~/nvme-setup
+mkdir -p ~/nvme-setup
 
 BOOT_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p1)
 ROOT_UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p2)
@@ -198,7 +198,7 @@ CLOUDSYNC_UUID=$(sudo blkid -s UUID -o value /dev/vg-main/lv-cloud-sync)
 SCRATCH_UUID=$(sudo blkid -s UUID -o value /dev/vg-main/lv-scratch)
 DATA_UUID=$(sudo blkid -s UUID -o value /dev/vg-main/lv-data)
 
-sudo cat > ~/nvme-setup/uuids.txt <<EOF
+cat > ~/nvme-setup/uuids.txt <<EOF
 BOOT_UUID=$BOOT_UUID
 ROOT_UUID=$ROOT_UUID
 SWAP_UUID=$SWAP_UUID
@@ -371,9 +371,12 @@ sudo rsync -axHAWX --info=progress2 \
 sudo rsync -axHAWX --info=progress2 \
   /var/lib/containers/ /mnt/nvme_containers/
 
+
+source ~/nvme-setup/uuids.txt
+
 ## Configure cmdline.txt
 sudo tee /mnt/nvme_boot/cmdline.txt > /dev/null <<EOF
-console=serial0,115200 multipath=off dwc_otg.lpm_enable=0 console=tty1 root=LABEL=ROOT rootfstype=ext4 rootwait fixrtc cfg80211.ieee80211_regdom=JP
+console=serial0,115200 multipath=off dwc_otg.lpm_enable=0 console=tty1 root=UUID=${ROOT_UUID} rootfstype=ext4 rootwait fixrtc cfg80211.ieee80211_regdom=JP
 EOF
 
 # Verify single line:
@@ -496,7 +499,7 @@ sudo rpi-eeprom-update -a
 sudo tee /mnt/nvme_boot/config.txt > /dev/null <<EOF
 [all]
 
-# PCIe Gen3 for NVMe (max speed)
+# PCIe Gen2 for NVMe, Gen3 for max speed (experimental)
 dtparam=pciex1_gen=3
 
 # 64-bit kernel
