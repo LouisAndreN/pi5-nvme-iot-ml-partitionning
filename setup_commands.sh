@@ -634,10 +634,10 @@ update-initramfs -u -k all
 # Check success
 ls -lh /boot/initrd.img-*
 
-LATEST_INITRD=$(ls -v /mnt/nvme_root/boot/initrd.img-* | tail -n 1)
+LATEST_INITRD=$(ls -v /boot/initrd.img-* | tail -n 1)
 
 # Check if dm.crypt present
-lsinitramfs /mnt/test_boot/initrd.img | grep dm.crypt
+lsinitramfs "$LATEST_INITRD" | grep -q "dm.crypt"
 
 # Enable BTRFS subvolume mount units
 systemctl enable mnt-data-archives.mount
