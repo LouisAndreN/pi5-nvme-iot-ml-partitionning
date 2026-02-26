@@ -701,6 +701,9 @@ systemctl enable mnt-data-archives.mount
 systemctl enable mnt-data-backups.mount
 systemctl enable mnt-data-personal.mount
 
+## Enable TRIM
+systemctl enable fstrim.timer
+
 # Exit chroot
 exit
 
@@ -712,11 +715,6 @@ sudo cp "$LATEST_KERNEL" /mnt/nvme_boot/vmlinuz
 # Same with initrd
 LATEST_INITRD=$(ls -v /mnt/nvme_root/boot/initrd.img-* | tail -n 1)
 sudo cp "$LATEST_INITRD" /mnt/nvme_boot/initrd.img
-
-
-## Enable TRIM
-sudo systemctl enable fstrim.timer
-sudo systemctl start fstrim.timer
 
 
 ## Create post-boot verification script
