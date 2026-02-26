@@ -4,7 +4,7 @@ This project provides an optimized configuration and partitionning system on a 1
 It uses Ubuntu Server LTS 24.04.3 and tested on NVMe Micron 2200. After running write and read test speed, I get the following performances :
 
 - read: IOPS=3162, BW=395MiB/s (414MB/s) 
-- write: BW=
+- write: IOPS=, BW= ()
 
 Even if PCIe set on Gen3, the read and write performance limitations come from the SunFounder Dual NVMe Raft, which limit it to performances of Gen2.
 
