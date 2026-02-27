@@ -478,6 +478,7 @@ sudo chmod 400 /mnt/nvme_recovery/backup/luks-keyfile
 # Add to crypttab
 sudo tee /mnt/nvme_root/etc/crypttab > /dev/null <<EOF
 cryptdata UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p5) /boot/luks-keyfile luks,discard
+swap /dev/nvme0n1p3 /dev/urandom swap,cipher=aes-xts-plain64,size=512
 EOF
 
 ## Update EEPROM
