@@ -697,9 +697,8 @@ ls -lh /boot/initrd.img-*
 LATEST_INITRD=$(ls -v /boot/initrd.img-* | tail -n 1)
 
 # Check if dm.crypt present
-lsinitramfs "$LATEST_INITRD" | grep -q "dm.crypt" \
+lsinitramfs "$LATEST_INITRD" | grep -q "dm.crypt" && echo "[OK] dm_crypt present in initramfs" \
     || { echo "[ERROR] dm_crypt NOT in initramfs — LUKS boot will fail!"; exit 1; }
-echo "[OK] dm_crypt present in initramfs"
 
 # Enable BTRFS subvolume mount units
 systemctl enable mnt-data-archives.mount
