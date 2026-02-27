@@ -11,7 +11,7 @@ Despite Pi5 forcing PCIe Gen3, adapter path limits negotiation to Gen2.
 
 The script `/opt/verify-boot.sh` is generated automatically during the installation and launched manually after the first boot on NVMe to validate all mounts LUKS, LVM, FS tuning, TRIM, etc.
 
-- Encrypted save of KUKS keyfile on AWS S3/Azure Blob with rsync with rotation and versioning
+- Encrypted save of LUKS keyfile on AWS S3/Azure Blob with rsync with rotation and versioning
 - Incremental save Btrfs lv-data to cloud through snapshots send/receive with lv-cloud-sync
 
 The partitionning system is made as follows :
