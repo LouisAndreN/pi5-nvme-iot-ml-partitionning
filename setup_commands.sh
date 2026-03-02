@@ -1,4 +1,4 @@
-# Pi 5 NVMe 1To Setup - Command Reference for Ubuntu Server 24.04.3 LTS boot
+# Pi 5 NVMe 1Tb Setup - Command Reference for Ubuntu Server 24.04.3 LTS boot
 
 # Install needed packages
 sudo apt update && sudo apt upgrade -y
@@ -240,10 +240,10 @@ sudo mount /dev/vg-main/lv-data /mnt/nvme_data
 # Verify
 df -h | grep nvme
 
-# Copier outils essentiels dans /recovery
+# Copy essentials tools in /recovery
 sudo mkdir -p /mnt/nvme_recovery/{tools,scripts,backup}
 
-# Scripts recovery
+# Recovery scripts
 sudo tee /mnt/nvme_recovery/scripts/unlock-luks.sh > /dev/null <<'EOF'
 #!/bin/bash
 # Emergency LUKS unlock script
@@ -376,7 +376,7 @@ sudo tee /mnt/nvme_boot/cmdline.txt > /dev/null <<EOF
 console=serial0,115200 multipath=off dwc_otg.lpm_enable=0 console=tty1 root=UUID=${ROOT_UUID} rootfstype=ext4 rootwait fixrtc cfg80211.ieee80211_regdom=JP
 EOF
 
-# Verify single line:
+# Verify single line
 wc -l /mnt/nvme_boot/cmdline.txt  # Should output: 1
 
 ## Configure /etc/fstab
@@ -460,7 +460,7 @@ Options=defaults,noatime,compress=zstd:3,space_cache=v2,subvol=@personal
 WantedBy=multi-user.target
 EOF
 
-# Créer répertoires mount points
+# Create mount point folders
 sudo mkdir -p /mnt/nvme_root/mnt/data/{archives,backups,personal}
 
 
@@ -490,15 +490,12 @@ EOF
 sudo rpi-eeprom-config --apply "$EEPROM_TMP"
 rm "$EEPROM_TMP"
 
-# Apply:
+# Apply EEPROM
 sudo rpi-eeprom-update -a
 
 ## Configure config.txt
 sudo tee /mnt/nvme_boot/config.txt > /dev/null <<EOF
 [all]
-
-# PCIe Gen2 for NVMe, Gen3 for max speed (experimental)
-dtparam=pciex1_gen=3
 
 # 64-bit kernel
 arm_64bit=1
@@ -564,6 +561,8 @@ dtoverlay=dwc2,dr_mode=host
 
 [pi5]
 dtparam=pciex1
+
+# PCIe Gen2 for NVMe, Gen3 for max speed (experimental)
 dtparam=pciex1_gen=3
 
 
@@ -575,7 +574,7 @@ EOF
 sudo rm /mnt/nvme_root/etc/resolv.conf
 sudo cp /etc/resolv.conf /mnt/nvme_root/etc/resolv.conf
 
-# Mount system filesystems
+# Mount filesystems
 sudo mount /dev/nvme0n1p1 /mnt/nvme_root/boot/firmware
 
 # Mount dev with rbind + rslave (really important for /dev/null, /dev/pts, etc.)
@@ -685,7 +684,6 @@ grep -r "dm.crypt\|dm-crypt" /etc/initramfs-tools/modules
 
 # Check modules crypto
 grep -E "^(aes|sha256)" /etc/initramfs-tools/modules
-
 
 
 # Regenerate initramfs with crypttab + keyfile
