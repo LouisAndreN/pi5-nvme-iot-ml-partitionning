@@ -120,7 +120,7 @@ sudo lvcreate -L 60G -n lv-ml-models vg-main
 sudo lvcreate -L 40G -n lv-ml-cache vg-main
 sudo lvcreate -L 80G -n lv-cloud-sync vg-main
 sudo lvcreate -L 60G -n lv-scratch vg-main
-sudo lvcreate -l 100%FREE -n lv-data vg-main   # ~343 GiB
+sudo lvcreate -l 100%FREE -n lv-data vg-main   # ~340 GiB
 
 # InfluxDB (I/O intensif)
 sudo lvchange --readahead 8192 vg-main/lv-influxdb  # 4MB readahead
