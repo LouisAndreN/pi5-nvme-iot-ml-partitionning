@@ -50,7 +50,7 @@ Now the Pi should boot Ubuntu Server on the NVMe and you can connect to it by SS
 
 ## 日本語
 
-詳細な手順は [Qiita記事](https://qiita.com/LouisAndreN/items/a5d286a591abda8e6553) をご覧ください。
+詳細な手順は [Qiita記事]([https://qiita.com/LouisAndreN/items/a5d286a591abda8e6553](https://qiita.com/LouisAndreN/items/1ace35f6a9e915686fe4)) をご覧ください。
 
 ---
 
