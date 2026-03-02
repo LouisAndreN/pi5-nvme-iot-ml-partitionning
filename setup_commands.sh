@@ -312,8 +312,7 @@ COMPLETE FAILURE (both passphrase + keyfile lost):
 Data is UNRECOVERABLE (encryption working as designed)
 This is why backups exist (/mnt/data/backups)
 
-Created: $(date)
-System: Raspberry Pi 5 + NVMe 1TB + Hailo-8L
+System: Raspberry Pi 5 + NVMe 1TB
 EOF
 
 ## Copy data from SD
