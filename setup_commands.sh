@@ -75,7 +75,7 @@ sudo mkfs.ext4 -L RECOVERY /dev/nvme0n1p4
 # p5 LUKS (encryption)
 # Configuration LUKS2 encryption
 # Parameters:
-#   - Algorithm: AES-XTS-256 (512-bit key)
+#   - Algorithm: AES-XTS (512-bit key, équivalent AES-256 effectif via XTS mode)
 #   - PBKDF: Argon2id (GPU-resistant)
 #   - Sector size: 4096 bytes (NVMe native) (better performance but compatible only with kernel 5.9+)
 #   - Iteration time: 2000ms (fast boot)
