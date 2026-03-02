@@ -32,7 +32,7 @@ The partitionning system is made as follows :
 | ├─ lv-ml-cache          | 40 GB    | xfs    | /mnt/ml-cache                       | staging/ (validation SageMaker-like)<br>training_data/ (export cloud)<br>logs/ (TensorBoard, ML metrics) |
 | ├─ lv-cloud-sync        | 80 GB    | xfs    | /mnt/cloud-sync                     | pending/ (Influx export in progress)<br>uploading/ (upload S3/Azure en cours)<br>uploaded/ (success, retention 7d)<br>failed/ (retry + Prometheus alerts) |
 | ├─ lv-scratch           | 60 GB    | xfs    | /mnt/scratch                        | Buffer preprocessing (nowcasting camera images, device electrical signatures)        |
-| ├─ lv-data              | 338 GB   | btrfs  | /mnt/data                           | @iot-hot/ (active data 7-30d, quota 100 GiB)<br>@iot-archives (long term multi-year, compression zstd:3 max)<br>@backups (exported snapshots LVM, send/receive to cloud)<br>@personal (docs, source code) |
+| ├─ lv-data              | 340 GB   | btrfs  | /mnt/data                           | @iot-hot/ (active data 7-30d, quota 100 GiB)<br>@iot-archives (long term multi-year, compression zstd:3 max)<br>@backups (exported snapshots LVM, send/receive to cloud)<br>@personal (docs, source code) |
 
 
 ---
