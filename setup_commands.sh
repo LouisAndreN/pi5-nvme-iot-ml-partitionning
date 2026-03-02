@@ -254,7 +254,7 @@ if [ -f /boot/luks-keyfile ]; then
     cryptsetup open /dev/nvme0n1p5 cryptdata --key-file /boot/luks-keyfile
 else
     echo "Keyfile not found, using backup header..."
-    cryptsetup luksHeaderRestore /dev/nvme0n1p5 --header-backup-file /recovery/backup/luks-header-backup.img
+    cryptsetup luksHeaderRestore /dev/nvme0n1p5 --header-backup-file /nvme_recovery/backup/luks-header-backup.img
     cryptsetup open /dev/nvme0n1p5 cryptdata
 fi
 
@@ -474,7 +474,7 @@ sudo chmod 400 /mnt/nvme_recovery/backup/luks-keyfile
 # Add to crypttab
 sudo tee /mnt/nvme_root/etc/crypttab > /dev/null <<EOF
 cryptdata UUID=$(sudo blkid -s UUID -o value /dev/nvme0n1p5) /boot/luks-keyfile luks,discard
-swap /dev/nvme0n1p3 /dev/urandom swap,cipher=aes-xts-plain64,size=512
+swap /dev/nvme0n1p3 /dev/urandom swap,cipher=aes-xts-plain64,size=512,sector-size=4096
 EOF
 
 ## Update EEPROM
