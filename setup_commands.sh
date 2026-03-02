@@ -670,7 +670,7 @@ chmod +x /etc/initramfs-tools/hooks/copy-luks-key
 
 # Add cryptsetup modules
 echo "dm_crypt" >> /etc/initramfs-tools/modules
-echo "dm-mod" >> /etc/initramfs-tools/modules
+echo "dm_mod" >> /etc/initramfs-tools/modules
 echo "aes" >> /etc/initramfs-tools/modules
 echo "sha256" >> /etc/initramfs-tools/modules
 
