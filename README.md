@@ -84,76 +84,12 @@ Raspberry Pi 5 は PCIe Gen3 を強制設定していますが、アダプター
 | ├─ lv-influxdb          | 120 GB   | xfs    | /var/lib/influxdb                   | IoT 時系列データベース |
 | ├─ lv-containers        | 80 GB    | xfs    | /var/lib/containers                 | Docker（HA、MQTT、Grafana、Prometheus 等）          |
 | ├─ lv-grafana           | 10 GB    | ext4   | /var/lib/grafana                    | Grafana ダッシュボード                                        |
-| ├─ lv-ml-models         | 60 GB    | xfs    | /mnt/ml-models                      | production/（稼働中モデル Hailo）
-　staging/（A/B テスト）
-　archived/（ロールバック用）
-　datasets/（ローカル学習データ） |
-| ├─ lv-ml-cache          | 40 GB    | xfs    | /mnt/ml-cache                       | staging/（検証環境 SageMaker 類似）
-　training_data/（クラウド送信用データ）
-　logs/（TensorBoard、ML メトリクス） |
-| ├─ lv-cloud-sync        | 80 GB    | xfs    | /mnt/cloud-sync                     | pending/（Influx エクスポート待ち）
-　uploading/（S3 / Azure アップロード中）
-　uploaded/（成功データ、7日保持）
-　failed/（再試行 + Prometheus アラート） |
+| ├─ lv-ml-models         | 60 GB    | xfs    | /mnt/ml-models                      | production/（稼働中モデル Hailo）　staging/（A/B テスト）　archived/（ロールバック用）　datasets/（ローカル学習データ） |
+| ├─ lv-ml-cache          | 40 GB    | xfs    | /mnt/ml-cache                       | staging/（検証環境 SageMaker 類似）　training_data/（クラウド送信用データ）logs/（TensorBoard、ML メトリクス） |
+| ├─ lv-cloud-sync        | 80 GB    | xfs    | /mnt/cloud-sync                     | pending/（Influx エクスポート待ち）　uploading/（S3 / Azure アップロード中）　uploaded/（成功データ、7日保持）　failed/（再試行 + Prometheus アラート） |
 | ├─ lv-scratch           | 60 GB    | xfs    | /mnt/scratch                        | 前処理用バッファ（カメラ画像解析、デバイス電力シグネチャ解析など）      |
-| ├─ lv-data              | 340 GB   | btrfs  | /mnt/data                           | @iot-hot（アクティブデータ 7〜30日、100GiB クォータ）
-　@iot-archives（長期保存、zstd:3 圧縮）
-　@backups（LVM スナップショットのクラウド送信）
-　@personal（ドキュメント、ソースコード）
- |
+| ├─ lv-data              | 340 GB   | btrfs  | /mnt/data                           | @iot-hot（アクティブデータ 7〜30日、100GiB クォータ）　@iot-archives（長期保存、zstd:3 圧縮）　@backups（LVM スナップショットのクラウド送信）　@personal（ドキュメント、ソースコード） |
 
-
-
-
-Partition / LV | Size | FSType | Mount Point / Name | 用途 / 説明
-
-nvme0n1p1 | 1 GB | vfat | /boot/firmware | Ubuntu ブート領域（複数カーネル対応）
-
-nvme0n1p2 | 100 GB | ext4 | / | OS、ライブラリ、AI フレームワーク（Hailo SDK、PyTorch）
-
-nvme0n1p3 | 16 GB | swap | swap (encrypted) | 専用スワップ（ML/Hailo 用、RAM の 2 倍）
-
-nvme0n1p4 | 5 GB | ext4 | /recovery | 緊急復旧領域（LUKS ヘッダバックアップ、修復スクリプト、cryptsetup / lvm2 / btrfs-progs / ddrescue 等）
-
-nvme0n1p5 | 838 GB | LUKS | cryptdata | LUKS 暗号化領域
-
-├ vg-main | 838 GB | LVM | Volume Group | cryptdata 上の LVM ボリュームグループ
-
-├ lv-var | 20 GB | ext4 | /var | システムキャッシュ（APT、systemd、tmp）
-
-├ lv-logs | 30 GB | ext4 | /var/log | ESP32、Home Assistant、Influx、クラウド操作ログ（7日ローテーション）
-
-├ lv-influxdb | 120 GB | xfs | /var/lib/influxdb | IoT 時系列データベース
-
-├ lv-containers | 80 GB | xfs | /var/lib/containers | Docker（HA、MQTT、Grafana、Prometheus 等）
-
-├ lv-grafana | 10 GB | ext4 | /var/lib/grafana | Grafana ダッシュボード
-
-├ lv-ml-models | 60 GB | xfs | /mnt/ml-models
-　production/（稼働中モデル Hailo）
-　staging/（A/B テスト）
-　archived/（ロールバック用）
-　datasets/（ローカル学習データ）
-
-├ lv-ml-cache | 40 GB | xfs | /mnt/ml-cache
-　staging/（検証環境 SageMaker 類似）
-　training_data/（クラウド送信用データ）
-　logs/（TensorBoard、ML メトリクス）
-
-├ lv-cloud-sync | 80 GB | xfs | /mnt/cloud-sync
-　pending/（Influx エクスポート待ち）
-　uploading/（S3 / Azure アップロード中）
-　uploaded/（成功データ、7日保持）
-　failed/（再試行 + Prometheus アラート）
-
-├ lv-scratch | 60 GB | xfs | /mnt/scratch
-　前処理用バッファ（カメラ画像解析、デバイス電力シグネチャ解析など）
-
-├ lv-data | 340 GB | btrfs | /mnt/data
-　@iot-hot（アクティブデータ 7〜30日、100GiB クォータ）
-　@iot-archives（長期保存、zstd:3 圧縮）
-　@backups（LVM スナップショットのクラウド送信）
-　@personal（ドキュメント、ソースコード）
 
 ## インストール方法
 
