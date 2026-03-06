@@ -48,7 +48,7 @@ Now the Pi should boot Ubuntu Server on the NVMe and you can connect to it by SS
 
 ---
 
-## 日本語
+# 日本語
 
 本プロジェクトは、Raspberry Pi 5 において 1TB NVMe を使用した最適化された構成およびパーティション管理システムを提供します。
 NVMe は SunFounder Dual NVMe Raft PCIe アダプターにより接続され、Edge AI デバイス、機械学習モデル、および高度なスマートホーム向け各種サービスのオーケストレーションに最適化されています。
@@ -64,7 +64,7 @@ Raspberry Pi 5 は PCIe Gen3 を強制設定していますが、アダプター
 /opt/verify-boot.sh スクリプトはインストール時に自動生成され、NVMe からの初回起動後に手動で実行します。
 これにより、LUKS、LVM、ファイルシステムのチューニング、TRIM など、すべてのマウント状態を検証します。
 
-主な機能：
+## 主な機能：
 
 ・LUKS キーファイルの暗号化バックアップを AWS S3 / Azure Blob に rsync を用いて保存（ローテーションおよびバージョニング対応）
 ・Btrfs lv-data のインクリメンタルバックアップをスナップショットの send/receive 機能によりクラウドへ同期（lv-cloud-sync）
@@ -121,7 +121,7 @@ nvme0n1p5 | 838 GB | LUKS | cryptdata | LUKS 暗号化領域
 　@backups（LVM スナップショットのクラウド送信）
 　@personal（ドキュメント、ソースコード）
 
-インストール方法
+## インストール方法
 
 1. Raspberry Pi Imager を使用し、Ubuntu Server LTS を SD カード（最大 64GB）に書き込みます。
 2. SD カードと NVMe を Raspberry Pi 5 に接続し、SD カードから起動します。
