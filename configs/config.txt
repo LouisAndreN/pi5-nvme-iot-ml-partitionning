@@ -1,8 +1,5 @@
 [all]
 
-# PCIe Gen3 for NVMe (max speed)
-dtparam=pciex1_gen=3
-
 # 64-bit kernel
 arm_64bit=1
 
@@ -67,6 +64,9 @@ dtoverlay=dwc2,dr_mode=host
 
 [pi5]
 dtparam=pciex1
+
+# PCIe Gen3 for NVMe (max speed)
+dtparam=pciex1_gen=3
 
 
 [all]
